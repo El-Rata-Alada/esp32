@@ -1,3 +1,7 @@
+with all due respect gentlemen, this don't work. 
+guess i need to setup more things than just stating sta.
+
+
 #include <WiFi.h>
 
 const char* ap_ssid = "ESP32_TEST_AP";
@@ -34,3 +38,4 @@ void setup() {
 }
 
 void loop() {}
+
