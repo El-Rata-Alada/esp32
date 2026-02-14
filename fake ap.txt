@@ -1,48 +1,36 @@
 #include <WiFi.h>
-#include "esp_wifi.h"
 
-const char* ssid = "ESP32_TEST_AP";
-const char* password = "12345678";
+const char* ap_ssid = "ESP32_TEST_AP";
+const char* ap_password = "12345678";
 
-void printClients() {
-  wifi_sta_list_t stationList;
-  esp_wifi_ap_get_sta_list(&stationList);
-
-  Serial.print("Connected devices: ");
-  Serial.println(stationList.num);
-
-  for (int i = 0; i < stationList.num; i++) {
-    wifi_sta_info_t station = stationList.sta[i];
-
-    Serial.printf("Device MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                  station.mac[0], station.mac[1], station.mac[2],
-                  station.mac[3], station.mac[4], station.mac[5]);
-  }
-
-  if (stationList.num == 0) {
-    Serial.println("No devices connected.");
-  }
-}
+const char* sta_ssid = "phone's hotspot";
+const char* sta_password = "PASSWORD";
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  Serial.println("Starting ESP32 Access Point...");
+  Serial.println("Starting ESP32 AP + Station...");
 
-  WiFi.mode(WIFI_AP);
-  bool ok = WiFi.softAP(ssid, password);
+  WiFi.mode(WIFI_AP_STA);
 
-  if (ok) {
-    Serial.println("AP started successfully");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.softAPIP());
-  } else {
-    Serial.println("AP start FAILED");
+  // Connect to router
+  WiFi.begin(sta_ssid, sta_password);
+  Serial.print("Connecting to router");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
+
+  Serial.println("\nConnected to router");
+  Serial.print("Router IP: ");
+  Serial.println(WiFi.localIP());
+
+  // Start AP
+  WiFi.softAP(ap_ssid, ap_password);
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
 }
 
-void loop() {
-  printClients();
-  delay(10000);
-}
+void loop() {}
