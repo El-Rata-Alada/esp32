@@ -44,5 +44,5 @@ void setup() {
 
 void loop() {
   printClients();
-  delay(5000);
+  delay(10000);
 }
