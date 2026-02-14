@@ -1,0 +1,46 @@
+#include <WiFi.h>
+#include "lwip/lwip_napt.h"
+
+#define AP_SSID "ESP32_PORTAL"
+#define AP_PASS "12345678"
+
+#define STA_SSID "YOUR_PHONE_HOTSPOT"
+#define STA_PASS "YOUR_PHONE_PASSWORD"
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("Starting NAT router...");
+
+  // Start AP + STA
+  WiFi.mode(WIFI_AP_STA);
+
+  // Start AP
+  WiFi.softAP(AP_SSID, AP_PASS);
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
+
+  // Connect to phone hotspot
+  WiFi.begin(STA_SSID, STA_PASS);
+  Serial.print("Connecting to phone hotspot");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected to phone hotspot!");
+  Serial.print("STA IP: ");
+  Serial.println(WiFi.localIP());
+
+  // Enable NAT AFTER connection
+  ip_napt_init(1000, 10);     // table size
+  ip_napt_enable_no(0, 1);    // enable NAT on interface 0
+
+  Serial.println("NAT enabled. Internet should now work.");
+}
+
+void loop() {
+  // nothing needed
+}
