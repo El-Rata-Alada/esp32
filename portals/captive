@@ -1,0 +1,83 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <DNSServer.h>
+
+const char* ssid = "LPU_WIFI";
+const char* password = "12345678";
+
+WebServer server(80);
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
+
+String customURL = "portal.local"; // default value
+
+/* ---------- LOGIN PAGE ---------- */
+void handleLoginPage() {
+  String page = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: Arial; background: #f0f0f0; }
+.box { width:300px; margin:80px auto; padding:20px; background:white; border-radius:8px; }
+input { width:100%; padding:8px; margin:8px 0; }
+button { padding:10px; width:100%; background:#2f6fe4; color:white; border:none; }
+</style>
+</head>
+<body>
+<div class="box">
+<h3>Client Login</h3>
+<form action="/login" method="POST">
+<input name="user" placeholder="User Name">
+<input name="pass" type="password" placeholder="Password">
+<label>Portal URL:</label>
+<input name="url" maxlength="32" placeholder="e.g. portal.local">
+<label><input type="checkbox" name="agree"> I agree</label>
+<button type="submit">Login</button>
+</form>
+</div>
+</body>
+</html>
+)rawliteral";
+
+  server.send(200, "text/html", page);
+}
+
+/* ---------- AFTER LOGIN PAGE ---------- */
+void handleLoginSubmit() {
+  if (server.hasArg("url")) {
+    customURL = server.arg("url");
+  }
+
+  String page = "<html><body style='font-family:Arial;text-align:center;margin-top:80px;'>";
+  page += "<h2>Logged in</h2>";
+  page += "<p>Portal URL set to:</p>";
+  page += "<b>" + customURL + "</b>";
+  page += "</body></html>";
+
+  server.send(200, "text/html", page);
+}
+
+/* ---------- SETUP ---------- */
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+
+  dnsServer.start(DNS_PORT, "*", WiFi.softAPIP());
+
+  server.on("/", handleLoginPage);
+  server.on("/login", HTTP_POST, handleLoginSubmit);
+
+  server.onNotFound(handleLoginPage);
+
+  server.begin();
+}
+
+/* ---------- LOOP ---------- */
+void loop() {
+  dnsServer.processNextRequest();
+  server.handleClient();
+}
