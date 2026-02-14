@@ -1,7 +1,28 @@
 #include <WiFi.h>
+#include "esp_wifi.h"
 
 const char* ssid = "ESP32_TEST_AP";
-const char* password = "12345678"; // min 8 chars
+const char* password = "12345678";
+
+void printClients() {
+  wifi_sta_list_t stationList;
+  esp_wifi_ap_get_sta_list(&stationList);
+
+  Serial.print("Connected devices: ");
+  Serial.println(stationList.num);
+
+  for (int i = 0; i < stationList.num; i++) {
+    wifi_sta_info_t station = stationList.sta[i];
+
+    Serial.printf("Device MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                  station.mac[0], station.mac[1], station.mac[2],
+                  station.mac[3], station.mac[4], station.mac[5]);
+  }
+
+  if (stationList.num == 0) {
+    Serial.println("No devices connected.");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -21,4 +42,7 @@ void setup() {
   }
 }
 
-void loop() {}
+void loop() {
+  printClients();
+  delay(5000);
+}
